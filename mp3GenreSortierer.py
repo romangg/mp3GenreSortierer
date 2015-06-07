@@ -59,14 +59,8 @@ Subgenres per genre:
     'Contemporary Christian', 'Christian Rock', 'Merengue', 'Salsa', 'Thrash Metal', 'Anime', 'JPop', 'Synthpop'
     ]  """ 
 
-#TODO: Fehler beim Eintragen der Subgenres beseitigen -> DONE?
-#TODO: Singlelisten und Folderlisten vor dem Bearbeiten alphabetisch anordnen! -> DONE?
-#TODO: Wartezeit vor dem Bestätigen des Verschieben eines Ordners -> DONE?
-#TODO: Try-Klammer um id3 reader -> DONE?
-#TODO: Keine Unterscheidung von Groß-Klein-Schrift bei Genres -> DONE?
-#TODO: Ordner manuell kopieren -> DONE?
+#TODO: Rauslöschen von Subgenre mit gleichem Namen wie Genre (Rock im Beispiel) verhindern
 #TODO: Target genres komplett im Programm editierbar machen
-#TODO: Genreeingaben für alle Genres und entscheidbar machen ob immer verknüpfen (Standard: Nein) FEINTUNING
 
 
 class Genre(object):
@@ -261,7 +255,7 @@ def WorkOnRootFolder():
         if os.path.isdir(filepath):
             if filepath not in [workingpath, copyroot]: 
                 folderlist.append(file)
-        elif file.endswith(".mp3"):
+        elif file.lower().endswith(".mp3"):
             singlelist.append(file)
     singlelist.sort(key=lambda w: (w.lower(), w[0].islower()))   
     folderlist.sort(key=lambda w: (w.lower(), w[0].islower()))
@@ -288,7 +282,6 @@ def WorkOnRootFolder():
             for i,g in enumerate(Genre.genrelist):
                 openingstr += "("+str(i+1)+") " + g.getgname()+"\n"
             openingstr += "############\nSpecify target: "
-#            print range(1, len(Genre.genrelist)+1)
             genre= UserInputHandler(int, range(1, len(Genre.genrelist)+1), 
                                     openingstr, 
                                     "Please type a number between '1' and '" + str(len(Genre.genrelist))+"': ", 
@@ -313,7 +306,6 @@ def SingleTarget(filepath, file, userinputallowed=True):
         print "### Could not read id3 genre from file. ###"
         filegenre=None
     subgenre=None
-    #subgenrefound=False
     if filegenre:
         sfilegenre = filegenre.replace(' ','').replace('-','').lower()
         subgenre = filegenre
@@ -324,8 +316,7 @@ def SingleTarget(filepath, file, userinputallowed=True):
         else:
             print "--> User input omitted!"
             return None
-    if sfilegenre.startswith("("):# and filegenre.endswith(")"):
-        #filegenre=filegenre.strip('()')
+    if sfilegenre.startswith("("):
         sfilegenre= sfilegenre[1:]
         ssfilegenre=""
         for c in sfilegenre:
@@ -344,9 +335,7 @@ def SingleTarget(filepath, file, userinputallowed=True):
         for id3g in littleid3reader._genres:
             if id3g.replace(' ','').replace('-','').lower() == sfilegenre:
                 subgenre=id3g
-                #subgenrefound=True
                 break
-    #if subgenrefound==True:
     if subgenre:
         for genre in Genre.genrelist:
             if genre.compSubgenres(subgenre):
@@ -355,7 +344,7 @@ def SingleTarget(filepath, file, userinputallowed=True):
     if userinputallowed:
         return SubgenreUserInput(subgenre, filepath)
     else:
-        print ""
+        print "--> User input omitted!"
         return None
            
 def SubgenreUserInput(subgenre, song):
@@ -462,7 +451,7 @@ def FolderTarget(folderpath, folder, inputsallowed=True):
     for file in filelist:
         if os.path.isdir(folderpath+os.sep+file):
             folderlist.append(file)
-        elif file.endswith(".mp3"):
+        elif file.lower().endswith(".mp3"):
             singlelist.append(file)
     singlelist.sort(key=lambda w: (w.lower(), w[0].islower()))   
     folderlist.sort(key=lambda w: (w.lower(), w[0].islower()))
@@ -471,6 +460,7 @@ def FolderTarget(folderpath, folder, inputsallowed=True):
         sgenre=SingleTarget(folderpath+os.sep+s,s, inputsallowed)
         if sgenre==1:
             inputsallowed=False # Skipping the user input for the rest of files and folders in this folder.
+            sgenre=None
         for g in glist:
             if g[0]==sgenre:
                 g[1]+=1
